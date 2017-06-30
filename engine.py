@@ -5,6 +5,7 @@ from input_handlers import handle_keys
 from map_objects.game_map import GameMap
 from render_functions import clear_all, render_all
 
+
 def main():
     screen_width = 100
     screen_height = 70
@@ -58,4 +59,4 @@ def main():
 
 
 if __name__ == '__main__':
-     main()
+    main()
