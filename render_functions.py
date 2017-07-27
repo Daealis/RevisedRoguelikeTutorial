@@ -1,17 +1,29 @@
 import libtcodpy as libtcod
 from game_states import enum
+from game_states import GameStates
+
+from menus import inventory_menu
 
 RenderOrder = enum(CORPSE=1,
                    ITEM=2,
                    ACTOR=3)
+
+
 def get_names_under_mouse(mouse, entities, fov_map):
     (x, y) = (mouse.cx, mouse.cy)
 
+    # Create a list of entity names under the mouse cursor
     names = [entity.name for entity in entities
              if entity.x == x and entity.y == y and libtcod.map_is_in_fov(fov_map, entity.x, entity.y)]
     names = ', '.join(names)
 
     return names.capitalize()
+
+
+"""
+Renders the UI bar at the bottom of the screen
+"""
+
 
 def render_bar(panel, x, y, total_width, name, value, maximum, bar_color, back_color):
     bar_width = int(float(value) / maximum * total_width)
@@ -27,8 +39,14 @@ def render_bar(panel, x, y, total_width, name, value, maximum, bar_color, back_c
     libtcod.console_print_ex(panel, int(x + total_width / 2), y, libtcod.BKGND_NONE, libtcod.CENTER,
                              '{0}: {1}/{2}'.format(name, value, maximum))
 
+
+"""
+Render the map and everything in it
+"""
+
+
 def render_all(con, panel, entities, player, game_map, fov_map, fov_recompute, message_log, screen_width, screen_height,
-               bar_width, panel_height, panel_y, mouse, colors):
+               bar_width, panel_height, panel_y, mouse, colors, game_state):
     # Draw all the tiles in the game map
     if fov_recompute:
         for y in range(game_map.height):
@@ -48,18 +66,34 @@ def render_all(con, panel, entities, player, game_map, fov_map, fov_recompute, m
                     else:
                         libtcod.console_set_char_background(con, x, y, colors.get('dark_ground'), libtcod.BKGND_SET)
 
-    # Draw all entities in the list
-    entities_in_render_order = sorted(entities, reverse=True)
+    #Sort the entities in the order they're supposed to be drawn
+    entities_in_render_order = sorted(entities, key=getkey)
 
+    # Draw all entities in the list
     for entity in entities_in_render_order:
         draw_entity(con, entity, fov_map)
 
+    #Put everything on the screen
     libtcod.console_blit(con, 0, 0, screen_width, screen_height, 0, 0, 0)
+
+    #Draw the inventory screen on top of everything
+    if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
+        if game_state == GameStates.SHOW_INVENTORY:
+            inventory_title = 'Press the key next to an item to use it, or Esc to cancel.\n'
+        else:
+            inventory_title = 'Press the key next to an item to drop it, or Esc to cancel.\n'
+
+        inventory_menu(con, inventory_title, player.inventory, 50, screen_width, screen_height)
 
     libtcod.console_set_default_background(panel, libtcod.black)
     libtcod.console_clear(panel)
 
-    # Print the game messages, one line at a time
+    """
+    Draw the UI panel at the bottom
+    First the message log in the middle,
+    then the hit point bar on the left,
+    finally all the items under the mouse cursor
+    """
     y = 1
     for message in message_log.messages:
         libtcod.console_set_default_foreground(panel, message.color)
@@ -73,6 +107,7 @@ def render_all(con, panel, entities, player, game_map, fov_map, fov_recompute, m
                              get_names_under_mouse(mouse, entities, fov_map))
 
     libtcod.console_blit(panel, 0, 0, screen_width, panel_height, 0, 0, panel_y)
+
 
 def clear_all(con, entities):
     for entity in entities:
@@ -88,3 +123,6 @@ def draw_entity(con, entity, fov_map):
 def clear_entity(con, entity):
     # erase the character that represents this object
     libtcod.console_put_char(con, entity.x, entity.y, ' ', libtcod.BKGND_NONE)
+
+def getkey(entity):
+    return entity.render_order
