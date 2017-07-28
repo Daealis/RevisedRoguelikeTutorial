@@ -7,7 +7,7 @@ from entity import Entity, get_blocking_entities_at_location
 from fov_functions import initialize_fov, recompute_fov
 from game_messages import Message, MessageLog
 from game_states import GameStates
-from input_handlers import handle_keys
+from input_handlers import handle_keys, handle_mouse
 from map_objects.game_map import GameMap
 from render_functions import clear_all, render_all, RenderOrder
 
@@ -87,6 +87,8 @@ def main():
     game_state = GameStates.PLAYERS_TURN
     previous_game_state = game_state
 
+    targeting_item = None
+
     # The Main game loop
     while not libtcod.console_is_window_closed():
         # If wait until a key is pressed
@@ -105,6 +107,7 @@ def main():
 
         # Define actions
         action = handle_keys(key, game_state)
+        mouse_action = handle_mouse(mouse)
 
         move = action.get('move')
         wait = action.get('wait')
@@ -113,8 +116,10 @@ def main():
         drop_inventory = action.get('drop_inventory')
         inventory_index = action.get('inventory_index')
         exit = action.get('exit')
-
         fullscreen = action.get('fullscreen')
+
+        left_click = mouse_action.get('left_click')
+        right_click = mouse_action.get('right_click')
 
         player_turn_results = []
 
@@ -149,23 +154,23 @@ def main():
                     break
             else:
                 message_log.add_message(Message('There is nothing here to pick up.', libtcod.yellow))
-        #If the player hits wait, move straight to the enemy turn
+        # If the player hits wait, move straight to the enemy turn
         elif wait and game_state == GameStates.PLAYERS_TURN:
             game_state = GameStates.ENEMY_TURN
 
-        #Inventory handling
+        # Inventory handling
 
-        #Show the inventory
+        # Show the inventory
         if show_inventory:
             previous_game_state = game_state
             game_state = GameStates.SHOW_INVENTORY
 
-        #Show the drop inventory
+        # Show the drop inventory
         if drop_inventory:
             previous_game_state = game_state
             game_state = GameStates.DROP_INVENTORY
 
-        #Select an item from the inventory
+        # Select an item from the inventory
         if inventory_index is not None and previous_game_state != GameStates.PLAYER_DEAD and inventory_index < len(
                 player.inventory.items):
             item = player.inventory.items[inventory_index]
@@ -175,9 +180,27 @@ def main():
             elif game_state == GameStates.DROP_INVENTORY:
                 player_turn_results.extend(player.inventory.drop_item(item))
 
+        """
+        Targeting mode
+        Left-click on mouse sets target coordinates and uses the item
+        Right-click cancels targeting
+        
+        """
+        if game_state == GameStates.TARGETING:
+            if left_click:
+                target_x, target_y = left_click
+
+                item_use_results = player.inventory.use(targeting_item, entities=entities, fov_map=fov_map,
+                                                        target_x=target_x, target_y=target_y)
+                player_turn_results.extend(item_use_results)
+            elif right_click:
+                player_turn_results.append({'targeting_cancelled': True})
+
         if exit:
             if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY):
                 game_state = previous_game_state
+            elif game_state == GameStates.TARGETING:
+                player_turn_results.append({'targeting_cancelled': True})
             else:
                 return True
 
@@ -186,17 +209,25 @@ def main():
 
         # Process the results from player turn
         for player_turn_result in player_turn_results:
-            message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
             item_added = player_turn_result.get('item_added')
             item_consumed = player_turn_result.get('consumed')
             item_dropped = player_turn_result.get('item_dropped')
+            message = player_turn_result.get('message')
+            targeting = player_turn_result.get('targeting')
+            targeting_cancelled = player_turn_result.get('targeting_cancelled')
 
-            #If there's a message, add to log
+            # If there's a message, add to log
             if message:
                 message_log.add_message(message)
 
-            #If something died, put a message to the log and if it was the player, react accordingly
+            #Player cancels targeting
+            if targeting_cancelled:
+                game_state = previous_game_state
+
+                message_log.add_message(Message('Targeting cancelled'))
+
+            # If something died, put a message to the log and if it was the player, react accordingly
             if dead_entity:
                 if dead_entity == player:
                     message, game_state = kill_player(dead_entity)
@@ -205,17 +236,25 @@ def main():
 
                 message_log.add_message(message)
 
-            #If the player picked up an item, remove it from the world
+            # Item requires targeting
+            if targeting:
+                previous_game_state = GameStates.PLAYERS_TURN
+                game_state = GameStates.TARGETING
+
+                targeting_item = targeting
+
+                message_log.add_message(targeting_item.item.targeting_message)
+            # If the player picked up an item, remove it from the world
             if item_added:
                 entities.remove(item_added)
 
                 game_state = GameStates.ENEMY_TURN
 
-            #If player used an item, switch to enemy turn
+            # If player used an item, switch to enemy turn
             if item_consumed:
                 game_state = GameStates.ENEMY_TURN
 
-            #If an item was dropped, add it to the game world
+            # If an item was dropped, add it to the game world
             if item_dropped:
                 entities.append(item_dropped)
 

@@ -7,7 +7,8 @@ from components.fighter import Fighter
 from components.item import Item
 
 from entity import Entity
-from item_functions import heal, cast_lightning
+from game_messages import Message
+from item_functions import heal, cast_lightning, cast_fireball
 from random import randint
 from render_functions import RenderOrder
 
@@ -144,13 +145,19 @@ class GameMap:
             x = randint(room.x1 + 1, room.x2 - 1)
             y = randint(room.y1 + 1, room.y2 - 1)
 
-            #Don't place entities in the same square
+            # Don't place entities in the same square
             if not any([entity for entity in entities if entity.x == x and entity.y == y]):
                 item_chance = randint(0, 100)
 
                 if item_chance < 70:
                     item_component = Item(use_function=heal, amount=4)
                     item = Entity(x, y, '!', libtcod.violet, 'Healing Potion', render_order=RenderOrder.ITEM,
+                                  item=item_component)
+                elif item_chance < 85:
+                    item_component = Item(use_function=cast_fireball, targeting=True, targeting_message=Message(
+                        'Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan),
+                                          damage=12, radius=3)
+                    item = Entity(x, y, '#', libtcod.red, 'Fireball Scroll', render_order=RenderOrder.ITEM,
                                   item=item_component)
                 else:
                     item_component = Item(use_function=cast_lightning, damage=20, maximum_range=5)
