@@ -56,6 +56,10 @@ class GameMap:
                 if num_rooms == 0:
                     player.x = new_x
                     player.y = new_y
+                    item_component = Item(use_function=heal, amount=4)
+                    item = Entity(new_x+1, new_y, '!', libtcod.violet, 'Healing Potion', render_order=RenderOrder.ITEM,
+                                  item=item_component)
+                    entities.append(item)
                 else:
                     # all rooms after the first:
                     # connect it to the previous room with a tunnel
