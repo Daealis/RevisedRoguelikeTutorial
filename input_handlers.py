@@ -1,3 +1,8 @@
+"""
+Input Handlers
+----
+Housed here are all the input handlers, one for each game state.
+"""
 import libtcodpy as libtcod
 
 from game_states import GameStates
@@ -75,6 +80,7 @@ def handle_player_turn_keys(key):
     return {}
 
 
+# Since targeting is done by mouse, the only key needed is for cancelling the targeting
 def handle_targeting_keys(key):
     if key.vk == libtcod.KEY_ESCAPE:
         return {'exit': True}
@@ -82,11 +88,15 @@ def handle_targeting_keys(key):
     return {}
 
 
+# When you die, you can still check your character screen, inventory, toggle fullscreen and exit the game.
 def handle_player_dead_keys(key):
     key_char = chr(key.c)
 
     if key_char == 'i':
         return {'show_inventory': True}
+
+    elif key_char == 'c':
+        return {'show_character_screen': True}
 
     if key.vk == libtcod.KEY_ENTER and key.lalt:
         # Alt+Enter: toggle full screen
@@ -99,6 +109,7 @@ def handle_player_dead_keys(key):
 
 
 def handle_inventory_keys(key):
+    # Simple transform from a keycode to an integer by deducing the first alphabet in ASCII from the code
     index = key.c - ord('a')
 
     if index >= 0:
@@ -114,6 +125,7 @@ def handle_inventory_keys(key):
     return {}
 
 
+# Main menu with its options of New game, Load game and exit
 def handle_main_menu(key):
     key_char = chr(key.c)
 
@@ -127,6 +139,7 @@ def handle_main_menu(key):
     return {}
 
 
+# Level up menu with a choice of our stats available
 def handle_level_up_menu(key):
     if key:
         key_char = chr(key.c)
@@ -140,12 +153,15 @@ def handle_level_up_menu(key):
 
     return {}
 
+
 def handle_character_screen(key):
     if key.vk == libtcod.KEY_ESCAPE:
         return {'exit': True}
 
     return {}
 
+
+# Use the built-in mouse system in Libtcod and get the mouse coordinates and clicks
 def handle_mouse(mouse):
     (x, y) = (mouse.cx, mouse.cy)
 

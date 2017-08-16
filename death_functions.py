@@ -1,3 +1,9 @@
+"""
+Death functions
+----
+Here are all the functions needed when something dies in the game.
+Currently housing only the player and the monsters
+"""
 import libtcodpy as libtcod
 
 from game_messages import Message

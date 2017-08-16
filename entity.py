@@ -1,3 +1,9 @@
+"""
+Entity
+----
+Implemented here is Entity: A generic object to represent players, enemies, items, etc.
+Everything in the world that can be interacted with in some capacity will be an entity.
+"""
 import math
 import libtcodpy as libtcod
 
@@ -5,11 +11,8 @@ from render_functions import RenderOrder
 
 from components.item import Item
 
-class Entity:
-    """
-    A generic object to represent players, enemies, items, etc.
-    """
 
+class Entity:
     def __init__(self, x, y, char, color, name, blocks=False, render_order=RenderOrder.CORPSE, fighter=None, ai=None,
                  item=None, inventory=None, stairs=None, level=None, equipment=None, equippable=None):
         self.x = x

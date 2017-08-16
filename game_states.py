@@ -1,4 +1,13 @@
-#Python 2.7 doesn't have an Enum, so we make our own
+"""
+Game States
+----
+Various states our game can be in.
+Most significant are the first three, as almost everything happens in the first two
+and an end state is handy when building a game
+"""
+
+
+# Python 2.7 doesn't have an Enum, so we make our own
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     reverse = dict((value, key) for key, value in enums.iteritems())

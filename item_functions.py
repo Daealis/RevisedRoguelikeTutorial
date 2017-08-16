@@ -1,8 +1,18 @@
+"""
+Item Functions
+----
+Herein are all the different functions our items can have.
+"""
 import libtcodpy as libtcod
 
 from components.ai import ConfusedMonster
 
 from game_messages import Message
+
+"""
+Heal
+Give the entity health back
+"""
 
 
 def heal(*args, **kwargs):
@@ -39,6 +49,7 @@ def cast_lightning(*args, **kwargs):
     target = None
     closest_distance = maximum_range + 1
 
+    # Go through entities, find the nearest in fov that has a fighter component and zap it with damage
     for entity in entities:
         if entity.fighter and entity != caster and libtcod.map_is_in_fov(fov_map, entity.x, entity.y):
             distance = caster.distance_to(entity)
@@ -75,6 +86,7 @@ def cast_fireball(*args, **kwargs):
 
     results = []
 
+    # Require that the player see what they're trying to scorch
     if not libtcod.map_is_in_fov(fov_map, target_x, target_y):
         results.append({'consumed': False,
                         'message': Message('You cannot target a tile outside your field of view.', libtcod.yellow)})
@@ -84,6 +96,7 @@ def cast_fireball(*args, **kwargs):
                     'message': Message('The fireball explodes, burning everything within {0} tiles!'.format(radius),
                                        libtcod.orange)})
 
+    # Go through the entities and if it has a fighter component and it's close enough, burn it
     for entity in entities:
         if entity.distance(target_x, target_y) <= radius and entity.fighter:
             results.append({'message': Message('The {0} gets burned for {1} hit points.'.format(entity.name, damage),
@@ -91,6 +104,13 @@ def cast_fireball(*args, **kwargs):
             results.extend(entity.fighter.take_damage(damage))
 
     return results
+
+
+"""
+Cast Confuse
+Target an entity with a fighter component and 
+cast confusion on it, resulting in its AI wandering in random patterns for 10 turns 
+"""
 
 
 def cast_confuse(*args, **kwargs):
@@ -106,8 +126,10 @@ def cast_confuse(*args, **kwargs):
                         'message': Message('You cannot target a tile outside your field of view.', libtcod.yellow)})
         return results
 
+    # Find an entity that is under the mouse cursos
     for entity in entities:
         if entity.x == target_x and entity.y == target_y and entity.ai:
+            # Make the entity confused for 10 turns
             confused_ai = ConfusedMonster(entity.ai, 10)
 
             confused_ai.owner = entity

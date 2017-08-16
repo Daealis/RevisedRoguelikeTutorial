@@ -1,5 +1,10 @@
+"""
+Engine
+----
+The core of our roguelike, where the main loop of our game is housed.
+"""
 import libtcodpy as libtcod
-import errno
+import random
 
 from death_functions import kill_player, kill_monster
 from entity import get_blocking_entities_at_location
@@ -40,6 +45,7 @@ def main():
     key = libtcod.Key()
     mouse = libtcod.Mouse()
 
+    # The core loop that returns the player to the main menu when a game ends, or when they exit
     while not libtcod.console_is_window_closed():
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE, key, mouse)
 
@@ -97,13 +103,15 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
 
     # The Main game loop
     while not libtcod.console_is_window_closed():
-        # If wait until a key is pressed
+        # Wait until a key is pressed
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE, key, mouse)
 
+        # Recalculate the field of vision from player coordinates. Only happens when player moves
         if fov_recompute:
             recompute_fov(fov_map, player.x, player.y, constants['fov_radius'], constants['fov_light_walls'],
                           constants['fov_algorithm'])
 
+        # Draw everything on screen
         render_all(con, panel, entities, player, game_map, fov_map, fov_recompute, message_log,
                    constants['screen_width'], constants['screen_height'], constants['bar_width'],
                    constants['panel_height'], constants['panel_y'], mouse, constants['colors'], game_state)
@@ -157,30 +165,34 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
                 game_state = GameStates.ENEMY_TURN
 
 
-        # If the player told to pick up an item
+        # Player tries to pick up an item
         elif pickup and game_state == GameStates.PLAYERS_TURN:
             for entity in entities:
-                # If there is an item at the coordinates, try to add it to inventory. If full, it'll fail
+                # If there is an item at the coordinates, try to add it to inventory. If full, fail at that
                 if entity.item and entity.x == player.x and entity.y == player.y:
                     pickup_results = player.inventory.add_item(entity)
                     player_turn_results.extend(pickup_results)
 
                     break
+            # Player tried to pick up empty space
             else:
-                message_log.add_message(Message('There is nothing here to pick up.', libtcod.yellow))
+                if random.randint(0, 100) >= 99:
+                    message_log.add_message(
+                        Message('You daintly pick up a handful of musty air and stuff it in your pocket.',
+                                libtcod.yellow))
+                else:
+                    message_log.add_message(Message('There is nothing here to pick up.', libtcod.yellow))
 
         # If the player hits wait, move straight to the enemy turn
         elif wait and game_state == GameStates.PLAYERS_TURN:
             game_state = GameStates.ENEMY_TURN
-
-        # Inventory handling
 
         # Show the inventory
         if show_inventory:
             previous_game_state = game_state
             game_state = GameStates.SHOW_INVENTORY
 
-        # Show the drop inventory
+        # Show the inventory for dropping items
         if drop_inventory:
             previous_game_state = game_state
             game_state = GameStates.DROP_INVENTORY
@@ -227,6 +239,7 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
         if show_character_screen:
             previous_game_state = game_state
             game_state = GameStates.CHARACTER_SCREEN
+
         """
         Targeting mode
         Left-click on mouse sets target coordinates and uses the item
@@ -242,6 +255,7 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
             elif right_click:
                 player_turn_results.append({'targeting_cancelled': True})
 
+        # Exits from inventory screens, targeting, or the game in general
         if exit:
             if game_state in (GameStates.SHOW_INVENTORY, GameStates.DROP_INVENTORY, GameStates.CHARACTER_SCREEN):
                 game_state = previous_game_state
@@ -256,6 +270,7 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
         if fullscreen:
             libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
 
+        # Loop that handles all the different player actions
         for player_turn_result in player_turn_results:
             message = player_turn_result.get('message')
             dead_entity = player_turn_result.get('dead')
@@ -286,7 +301,8 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
 
                 game_state = GameStates.ENEMY_TURN
 
-            # If player used an item, switch to enemy turn
+            # If player used an item, switch to enemy turn. The item reacts by itself,
+            # this loop only needs to concern itself with the game states
             if item_consumed:
                 game_state = GameStates.ENEMY_TURN
 
@@ -296,7 +312,7 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
 
                 game_state = GameStates.ENEMY_TURN
 
-            #If player equips an item from the inventory
+            # If player selects equipment from the inventory, equip or dequip it
             if equip:
                 equip_results = player.equipment.toggle_equip(equip)
 
@@ -312,7 +328,7 @@ def play_game(player, entities, game_map, message_log, game_state, con, panel, c
 
                 game_state = GameStates.ENEMY_TURN
 
-            # Item requires targeting
+            # Item requires targeting, go to targeting mode
             if targeting:
                 previous_game_state = GameStates.PLAYERS_TURN
                 game_state = GameStates.TARGETING

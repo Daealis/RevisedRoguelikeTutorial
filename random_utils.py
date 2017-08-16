@@ -1,3 +1,9 @@
+"""
+Random Utilities
+----
+We want to make randomizing and adding new items easier,
+and here are the tools to make this random choice easier and faster
+"""
 from random import randint
 
 
@@ -13,12 +19,14 @@ def random_choice_index(chances):
             return choice
         choice += 1
 
+
 def from_dungeon_level(table, dungeon_level):
     for (value, level) in reversed(table):
         if dungeon_level >= level:
             return value
 
     return 0
+
 
 def random_choice_from_dict(choice_dict):
     choices = list(choice_dict.keys())

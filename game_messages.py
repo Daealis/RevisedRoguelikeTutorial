@@ -1,3 +1,8 @@
+"""
+Game Messages
+----
+Implemented here are the classes for the message log in our game
+"""
 import libtcodpy as libtcod
 
 import textwrap

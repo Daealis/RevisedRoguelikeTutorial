@@ -1,3 +1,10 @@
+"""
+Render Functions
+----
+Everything your game needs for drawing on the screen is here,
+not including menus that have their own file.
+"""
+
 import libtcodpy as libtcod
 from game_states import enum
 from game_states import GameStates

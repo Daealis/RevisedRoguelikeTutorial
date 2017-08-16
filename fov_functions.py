@@ -1,3 +1,8 @@
+"""
+FoV Functions
+----
+For all the Field of Vision calculating needs, here are the two required
+"""
 import libtcodpy as libtcod
 
 
@@ -11,6 +16,6 @@ def initialize_fov(game_map):
 
     return fov_map
 
-def recompute_fov(fov_map, x, y, radius, light_walls=True, algorithm=0):
 
+def recompute_fov(fov_map, x, y, radius, light_walls=True, algorithm=0):
     libtcod.map_compute_fov(fov_map, x, y, radius, light_walls, algorithm)
